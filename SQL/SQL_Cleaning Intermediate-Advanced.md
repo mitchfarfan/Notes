@@ -1,10 +1,11 @@
-# SQL Cleaning: Intermediate / Advanced Notes
+# SQL Data Cleaning Toolkit — Intermediate to Advanced
 
-Realistic messy tables → what’s wrong → how to clean → SQL pattern.
+A complete reference for real‑world SQL cleaning patterns used in BI, analytics, and data modelling.  
+Includes messy examples → problems → cleaning patterns → advanced notes.
 
 ---
 
-## 1. TRIM / LTRIM / RTRIM
+# 1. TRIM / LTRIM / RTRIM — Whitespace Cleaning
 
 ### Messy table
 | customer_name |
@@ -29,9 +30,15 @@ TRIM(customer_name) AS clean_name
 | Mary |
 | David |
 
+### Additional Notes
+- Combine with LOWER/UPPER for standardisation:
+```sql
+LOWER(TRIM(city)) AS city_clean
+```
+
 ---
 
-## 2. LEFT / RIGHT / SUBSTRING
+# 2. LEFT / RIGHT / SUBSTRING — Extracting Parts of Text
 
 ### Messy table
 | phone |
@@ -58,7 +65,7 @@ RIGHT(REGEXP_REPLACE(phone, '[^0-9]', ''), 9) AS phone_clean
 
 ---
 
-## 3. REPLACE / REGEXP_REPLACE
+# 3. REPLACE / REGEXP_REPLACE — Standardising Text
 
 ### Messy table
 | address |
@@ -71,19 +78,19 @@ RIGHT(REGEXP_REPLACE(phone, '[^0-9]', ''), 9) AS phone_clean
 - Inconsistent abbreviations  
 - Need standardised “Street”  
 
-### Cleaning
+### Cleaning (simple)
 ```sql
 REPLACE(REPLACE(REPLACE(address, 'St.', 'Street'), 'Str', 'Street'), 'St', 'Street') AS address_clean
 ```
 
-**Advanced:**
+### Cleaning (advanced)
 ```sql
 REGEXP_REPLACE(address, 'St\\.?|Str', 'Street') AS address_clean
 ```
 
 ---
 
-## 4. UPPER / LOWER / PROPER (INITCAP)
+# 4. UPPER / LOWER / INITCAP — Casing Standardisation
 
 ### Messy table
 | email |
@@ -103,7 +110,7 @@ LOWER(email) AS email_clean
 
 ---
 
-## 5. CONCAT / CONCAT_WS
+# 5. CONCAT / CONCAT_WS — Combining Fields Safely
 
 ### Messy table
 | first_name | last_name |
@@ -123,7 +130,7 @@ CONCAT_WS(' ', first_name, last_name) AS full_name
 
 ---
 
-## 6. LPAD / RPAD (Padding)
+# 6. LPAD / RPAD — Padding Values
 
 ### Messy table
 | product_code |
@@ -150,7 +157,7 @@ LPAD(product_code, 5, '0') AS product_code_clean
 
 ---
 
-## 7. CAST / CONVERT
+# 7. CAST / CONVERT — Fixing Data Types
 
 ### Messy table
 | amount |
@@ -168,9 +175,25 @@ LPAD(product_code, 5, '0') AS product_code_clean
 CAST(amount AS DECIMAL(10,2)) AS amount_clean
 ```
 
+### Additional Patterns
+Convert text to integer:
+```sql
+CAST(age AS INT)
+```
+
+Convert text to date:
+```sql
+CAST(order_date AS DATE)
+```
+
+Convert numeric text with symbols:
+```sql
+CAST(REGEXP_REPLACE(amount_text, '[^0-9.]', '') AS DECIMAL(10,2))
+```
+
 ---
 
-## 8. COALESCE (NULL handling)
+# 8. COALESCE / NULLIF — NULL Handling
 
 ### Messy table
 | phone |
@@ -188,9 +211,15 @@ CAST(amount AS DECIMAL(10,2)) AS amount_clean
 COALESCE(phone, 'Missing') AS phone_clean
 ```
 
+### Additional Patterns
+Turn placeholder into NULL:
+```sql
+NULLIF(age, 0) AS age_clean
+```
+
 ---
 
-## 9. CASE WHEN (Category cleaning)
+# 9. CASE WHEN — Category Cleaning & Business Rules
 
 ### Messy table
 | status |
@@ -209,12 +238,23 @@ COALESCE(phone, 'Missing') AS phone_clean
 CASE 
     WHEN status IN ('C', 'Closed', 'closed') THEN 'Closed'
     WHEN status IN ('O', 'Open') THEN 'Open'
+    ELSE 'Unknown'
 END AS status_clean
+```
+
+### Additional Examples
+Categorising revenue bands:
+```sql
+CASE
+    WHEN revenue < 1000 THEN 'Low'
+    WHEN revenue < 5000 THEN 'Medium'
+    ELSE 'High'
+END AS revenue_band
 ```
 
 ---
 
-## 10. REGEXP functions (Advanced cleaning)
+# 10. REGEXP Functions — Advanced Cleaning
 
 ### Messy table
 | name |
@@ -234,11 +274,50 @@ REGEXP_REPLACE(name, '[^A-Za-z ]', '') AS name_alpha_only
 
 ---
 
+# 11. Deduplication with ROW_NUMBER()
+
+### Identify duplicates
+```sql
+ROW_NUMBER() OVER (
+    PARTITION BY customer_id
+    ORDER BY updated_at DESC
+) AS rn
+```
+
+### Keep only latest record
+```sql
+WHERE rn = 1
+```
+
+---
+
+# 12. Pivot / Unpivot — Structural Cleaning (Concept)
+
+### Pivot (rows → columns)
+```sql
+SELECT *
+FROM sales
+PIVOT (
+    SUM(amount) FOR quarter IN ('Q1','Q2','Q3','Q4')
+);
+```
+
+### Unpivot (columns → rows)
+```sql
+SELECT *
+FROM sales_unpivoted
+UNPIVOT (
+    amount FOR quarter IN (q1, q2, q3, q4)
+);
+```
+
+---
+
 # Bonus: Real‑World Cleaning Scenarios
 
 ---
 
-## Scenario A: Cleaning transaction IDs
+## Scenario A — Cleaning Transaction IDs
 
 ### Messy table
 | transaction_id |
@@ -259,7 +338,7 @@ LPAD(REGEXP_REPLACE(transaction_id, '[^0-9]', ''), 5, '0') AS txn_clean
 
 ---
 
-## Scenario B: Cleaning dates stored as text
+## Scenario B — Cleaning Dates Stored as Text
 
 ### Messy table
 | date_text |
@@ -277,14 +356,13 @@ CAST(date_text AS DATE)
 ```
 
 Or:
-
 ```sql
 TO_DATE(date_text, 'DD-MM-YYYY')
 ```
 
 ---
 
-## Scenario C: Cleaning currency fields
+## Scenario C — Cleaning Currency Fields
 
 ### Messy table
 | price |
@@ -301,3 +379,7 @@ TO_DATE(date_text, 'DD-MM-YYYY')
 ```sql
 CAST(REGEXP_REPLACE(price, '[^0-9\\.]', '') AS DECIMAL(10,2)) AS price_clean
 ```
+
+---
+
+# End of SQL Cleaning Toolkit
