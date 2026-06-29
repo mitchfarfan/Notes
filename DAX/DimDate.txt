@@ -1,0 +1,120 @@
+DimDate = 
+VAR Base =
+    ADDCOLUMNS (
+        CALENDAR ( DATE(2000,1,1), DATE(2050,12,31) ),
+        "DateValue", [Date]
+    )
+RETURN
+ADDCOLUMNS (
+    Base,
+
+    // ---------------------------------------------
+    // Keys & Basic Calendar Fields
+    // ---------------------------------------------
+    "Date Key", VALUE ( FORMAT ( [DateValue], "YYYYMMDD" ) ),
+
+    "Year", YEAR ( [DateValue] ),
+    "Month Number", MONTH ( [DateValue] ),
+    "Month Name", FORMAT ( [DateValue], "MMMM" ),
+    "Month Short", FORMAT ( [DateValue], "MMM" ),
+
+    "Year-Month", FORMAT ( [DateValue], "YYYY-MM" ),
+    "Year-Month Name", FORMAT ( [DateValue], "MMM YYYY" ),
+
+    "Quarter", "Q" & QUARTER([DateValue]),
+    "Quarter Number", QUARTER([DateValue]),
+    "Quarter-Year", "Q" & QUARTER([DateValue]) & " " & YEAR([DateValue]),
+
+    "Week of Month", INT( (DAY([DateValue]) - 1) / 7 ) + 1,
+
+    "Month Sort", YEAR([DateValue]) * 100 + MONTH([DateValue]),
+    "Quarter Sort", YEAR([DateValue]) * 10 + QUARTER([DateValue]),
+
+
+    // ---------------------------------------------
+    // Week & ISO Calendar Logic
+    // ---------------------------------------------
+    "Week", WEEKNUM([DateValue], 2),
+    "Week-Year", YEAR([DateValue]) & "-W" & FORMAT(WEEKNUM([DateValue],2), "00"),
+    "ISO Week", WEEKNUM([DateValue], 21),
+
+    "ISO Year",
+        VAR d = [DateValue]
+        RETURN YEAR( d - WEEKDAY(d,2) + 4 ),
+
+    "ISO Week-Year",
+        VAR d = [DateValue]
+        VAR isoYear = YEAR( d - WEEKDAY(d,2) + 4 )
+        VAR isoWeek = WEEKNUM(d,21)
+        RETURN FORMAT(isoYear, "0000") & "-W" & FORMAT(isoWeek, "00"),
+
+
+    // ---------------------------------------------
+    // Weekday Fields
+    // ---------------------------------------------
+    "Weekday Number", WEEKDAY([DateValue],2),
+    "Weekday Name", FORMAT([DateValue],"dddd"),
+    "Weekday Short", FORMAT([DateValue],"ddd"),
+
+    "Is Weekend", IF(WEEKDAY([DateValue],2) > 5, 1, 0),
+    "Is Working Day", IF(WEEKDAY([DateValue],2) <= 5, 1, 0),
+
+
+    // ---------------------------------------------
+    // Time-Series & Rolling Window Helpers
+    // ---------------------------------------------
+    "Day of Year",
+        DATEDIFF( DATE(YEAR([DateValue]),1,1), [DateValue], DAY ) + 1,
+
+    "Relative Date Offset", DATEDIFF([DateValue], TODAY(), DAY),
+
+
+    // ---------------------------------------------
+    // Period Start/End Flags
+    // ---------------------------------------------
+    "Is Start of Month", IF(DAY([DateValue]) = 1, 1, 0),
+    "Is End of Month", IF(EOMONTH([DateValue],0) = [DateValue], 1, 0),
+
+    "Is Start of Year", IF(MONTH([DateValue]) = 1 && DAY([DateValue]) = 1, 1, 0),
+    "Is End of Year", IF(MONTH([DateValue]) = 12 && DAY([DateValue]) = 31, 1, 0),
+
+
+    // ---------------------------------------------
+    // Fiscal Calendar (AU: July–June)
+    // ---------------------------------------------
+    "Fiscal Year", YEAR( EDATE([DateValue], 6 ) ),
+    "Fiscal Quarter", "Q" & QUARTER( EDATE([DateValue],6) ),
+    "Fiscal Month Number", MONTH( EDATE([DateValue],6) ),
+    "Fiscal Year-Month", FORMAT( EDATE([DateValue],6), "YYYY-MM" ),
+    "Fiscal Month Sort", YEAR(EDATE([DateValue],6))*100 + MONTH(EDATE([DateValue],6)),
+    "Fiscal Year End Date", DATE( YEAR(EDATE([DateValue],6)), 6, 30 ),
+
+
+    // ---------------------------------------------
+    // Seasonality (AU)
+    // ---------------------------------------------
+    "Season",
+        SWITCH(
+            TRUE(),
+            MONTH([DateValue]) IN {12,1,2}, "Summer",
+            MONTH([DateValue]) IN {3,4,5},  "Autumn",
+            MONTH([DateValue]) IN {6,7,8},  "Winter",
+            "Spring"
+        ),
+
+
+    // ---------------------------------------------
+    // Current Period Flags
+    // ---------------------------------------------
+    "Is Current Day", IF([DateValue] = TODAY(), 1, 0),
+
+    "Is Current Month",
+        IF(
+            YEAR([DateValue]) = YEAR(TODAY()) &&
+            MONTH([DateValue]) = MONTH(TODAY()),
+            1, 0
+        ),
+
+    "Is Current Year",
+        IF(YEAR([DateValue]) = YEAR(TODAY()), 1, 0)
+)
