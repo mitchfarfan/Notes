@@ -84,13 +84,3 @@ In these cases, the correct path is:
 Use USERELATIONSHIP only when you need customer‑level logic.  
 Let DimLocation handle all location‑based filtering.**
 
----
-
-If you want, I can also generate a **DAX pattern file** for your GitHub repo with reusable templates for:
-
-- Customer‑activated measures  
-- Location‑activated measures  
-- Dual‑path measures  
-- Relationship debugging helpers  
-
-Just say the word.
