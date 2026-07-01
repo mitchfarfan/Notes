@@ -131,6 +131,65 @@ CALCULATE(
 
 Together, they form the backbone of modelling logic.
 
+
+### **The filter modifiers (the rules for changing the filter context)**
+Everything after the first argument is a filter.
+
+Everything after the **first argument** in `CALCULATE()` is a **filter**.  
+These filters reshape the **filter context** before the expression is evaluated.
+
+### **Boolean Filters**
+```DAX
+FactCostChanges[ChangeDateKey] = LatestDate
+```
+A simple TRUE/FALSE condition applied to the table.
+
+---
+
+### **Table Filters**
+```DAX
+FILTER(FactSales, FactSales[Qty] > 10)
+```
+A table expression that returns only rows meeting a condition.
+
+---
+
+### **Context Removal**
+```DAX
+ALL(DimDate)
+```
+Removes filters from the specified table or column.
+
+---
+
+### **Context Preservation**
+```DAX
+ALLEXCEPT(FactCostChanges, FactCostChanges[ProductID])
+```
+Removes all filters **except** the ones listed.
+
+---
+
+### **Relationship Manipulation**
+```DAX
+CROSSFILTER(...)
+```
+Changes the direction or behavior of relationships during evaluation.
+
+---
+
+### **Virtual Tables**
+```DAX
+TREATAS(...)
+```
+Applies filters from one table to another, creating a virtual relationship.
+
+---
+
+### **What these filters do**
+All of these are ways of telling **CALCULATE**:
+
+
 ---
 
 # ## **5. SUMX Inside Time Intelligence**
